@@ -1,0 +1,36 @@
+# Copy this file to the root of your group's repository as project.yaml.
+# The course reads it with a program, so:
+# - keep every key exactly as it is spelled here; change only the values;
+# - put every value in double quotes;
+# - indent with spaces, never with tabs;
+# - list all four members, each starting with "- name:".
+# Check that GitHub shows the file without an error before you submit the
+# link to your repository.
+
+schema: "1"
+
+# Your working title. You may change it later; keep this file up to date.
+title: "School Parent Communication App"
+
+# One sentence: "An app that helps [users] to [do what] so that [benefit]."
+summary: "The School Parent Communication App is a secure mobile application that lets teachers and school staff
+(unit leaders, the principal, and administrators) share students’ attendance, grades, and behavior reports with parents,
+and lets all users message each other through role-based access."
+
+members:
+  - name: "Tamirat Petros"              # full name, as in the student register
+    student_id: "UGR/1447/16"         # exactly as on your student ID card
+    email: "tamirat.ugr-1447-16@aau.edu.et" # an address you read every day
+    github: "Tamirat-Petros"            # your GitHub username, without @
+  - name: "Yeamlak Fiseha"
+    student_id: "UGR/2121/16"
+    email: "yeamlak-ugr-2121-16@aau.edu.et"
+    github: "yeamlakfiseha-ui"
+  - name: "Surafel Kassa"
+    student_id: "UGR/0380/16"
+    email: "Surafelkassa253@gmail.com"
+    github: "Surafel750"
+  - name: "Wakgari Eshetu"
+    student_id: "UGR/9344/16"
+    email: "lelikenakoo663@gmail.com"
+    github: "Wakgari-Eshetu"
