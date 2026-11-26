@@ -1,25 +1,11 @@
-# Copy this file to the root of your group's repository as project.yaml.
-# The course reads it with a program, so:
-# - keep every key exactly as it is spelled here; change only the values;
-# - put every value in double quotes;
-# - indent with spaces, never with tabs;
-# - list all four members, each starting with "- name:".
-# Check that GitHub shows the file without an error before you submit the
-# link to your repository.
-
 schema: "1"
-
-# Your working title. You may change it later; keep this file up to date.
-title: "ParentLink: School Parent Communication App"
-
-# One sentence: "An app that helps [users] to [do what] so that [benefit]."
-summary: "An app that helps parents, teachers and administrators at Nativity Girls School to share attendance, grades, behavior reports, announcements and messages so that parents stay informed about their child without lost letters and scattered channels."
-
+title: "ParentLink"
+summary: "ParentLink is an app that helps parents, teachers and administrators at Nativity Girls School (NGS) to share attendance, grades, behavior reports, check-in and check-out times, announcements and the school year schedule, and to message each other, so parents stay informed about their child without depending on lost letters and scattered channels."
 members:
-  - name: "Tamirat Petros"              # full name, as in the student register
-    student_id: "UGR/1447/16"         # exactly as on your student ID card
-    email: "tamirat.ugr-1447-16@aau.edu.et" # an address you read every day
-    github: "Tamirat-Petros"            # your GitHub username, without @
+  - name: "Tamirat Petros"
+    student_id: "UGR/1447/16"
+    email: "tamirat.ugr-1447-16@aau.edu.et"
+    github: "Tamirat-Petros"
   - name: "Yeamlak Fiseha"
     student_id: "UGR/2121/16"
     email: "yeamlak-ugr-2121-16@aau.edu.et"
