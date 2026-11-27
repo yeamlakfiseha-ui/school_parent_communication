@@ -8,6 +8,8 @@ import '../../features/auth/presentation/auth_controller.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/community/presentation/community_screens.dart';
 import '../../features/leadership/presentation/leadership_screens.dart';
+import '../../features/messaging/presentation/chat_screen.dart';
+import '../../features/messaging/presentation/messages_screen.dart';
 import '../../features/parent/presentation/parent_screens.dart';
 import '../../features/teacher/presentation/teacher_screens.dart';
 import 'routes.dart';
@@ -77,9 +79,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             AppRoutes.parentMessages,
             'Messages',
             Icons.chat_bubble_outline,
-            (_) => const _PendingMessagesScreen(),
+            (_) => Builder(
+              builder: (context) => MessagesScreen(
+                onConversationTap: (conversation) =>
+                    context.push(AppRoutes.parentChatFor(conversation.id)),
+              ),
+            ),
           ),
         ],
+      ),
+      GoRoute(
+        path: AppRoutes.parentChat,
+        builder: (context, state) => ChatScreen(
+          conversationId: state.pathParameters['conversationId'] ?? '',
+        ),
       ),
       _roleShell(
         title: 'Teacher',
@@ -106,9 +119,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             AppRoutes.teacherMessages,
             'Messages',
             Icons.chat_bubble_outline,
-            (_) => const _PendingMessagesScreen(),
+            (_) => Builder(
+              builder: (context) => MessagesScreen(
+                onConversationTap: (conversation) =>
+                    context.push(AppRoutes.teacherChatFor(conversation.id)),
+              ),
+            ),
           ),
         ],
+      ),
+      GoRoute(
+        path: AppRoutes.teacherChat,
+        builder: (context, state) => ChatScreen(
+          conversationId: state.pathParameters['conversationId'] ?? '',
+        ),
       ),
       _roleShell(
         title: 'School leader',
@@ -178,6 +202,7 @@ class _Page {
     this.builder, {
     this.destination,
   });
+
   final String path;
   final String title;
   final IconData icon;
@@ -272,20 +297,5 @@ class _RoleShell extends ConsumerWidget {
       ),
     ),
     body: child,
-  );
-}
-
-class _PendingMessagesScreen extends StatelessWidget {
-  const _PendingMessagesScreen();
-
-  @override
-  Widget build(BuildContext context) => const Center(
-    child: Padding(
-      padding: EdgeInsets.all(24),
-      child: Text(
-        'Messages are implemented in PR #8 (feature/messaging).',
-        textAlign: TextAlign.center,
-      ),
-    ),
   );
 }
