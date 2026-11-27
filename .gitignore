@@ -11,3 +11,6 @@ build/
 # IDE files
 .idea/
 .vscode/
+
+# Test coverage
+coverage/
