@@ -134,20 +134,3 @@ Map<String, dynamic> _$ScheduleItemToJson(_ScheduleItem instance) =>
       'endDate': instance.endDate.toIso8601String(),
       'description': instance.description,
     };
-
-_ChatMessage _$ChatMessageFromJson(Map<String, dynamic> json) => _ChatMessage(
-  id: json['id'] as String,
-  threadId: json['threadId'] as String,
-  sender: json['sender'] as String,
-  text: json['text'] as String,
-  sentAt: DateTime.parse(json['sentAt'] as String),
-);
-
-Map<String, dynamic> _$ChatMessageToJson(_ChatMessage instance) =>
-    <String, dynamic>{
-      'id': instance.id,
-      'threadId': instance.threadId,
-      'sender': instance.sender,
-      'text': instance.text,
-      'sentAt': instance.sentAt.toIso8601String(),
-    };

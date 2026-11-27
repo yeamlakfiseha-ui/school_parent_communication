@@ -1,3 +1,5 @@
+// Generated with Claude, updated with Antigravity (Gemini 4 Hydrogen (High)), reviewed by Tamirat Petros
+
 import '../domain/school_record.dart';
 import '../domain/school_repository.dart';
 
@@ -176,29 +178,6 @@ class InMemorySchoolRepository implements SchoolRepository {
           startDate: now.add(const Duration(days: 2)),
           endDate: now.add(const Duration(days: 2)),
           description: 'Student demonstrations in the main hall.',
-        ),
-      ],
-      messages: [
-        ChatMessage(
-          id: 'm1',
-          threadId: 's-101',
-          sender: 'You',
-          text: 'Good morning, how is Mimi settling into the new term?',
-          sentAt: now.subtract(const Duration(days: 1, hours: 2)),
-        ),
-        ChatMessage(
-          id: 'm2',
-          threadId: 's-101',
-          sender: 'Ms. Selam',
-          text: 'She is doing well and has been participating confidently.',
-          sentAt: now.subtract(const Duration(days: 1, hours: 1)),
-        ),
-        ChatMessage(
-          id: 'm3',
-          threadId: 's-102',
-          sender: 'Mr. Dawit',
-          text: 'Could Hana bring her science notebook tomorrow?',
-          sentAt: now.subtract(const Duration(hours: 4)),
         ),
       ],
     );

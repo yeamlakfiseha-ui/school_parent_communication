@@ -1,3 +1,5 @@
+// Generated with Antigravity (Gemini 4 Hydrogen (High)), reviewed by Tamirat Petros
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/in_memory_student_repository.dart';

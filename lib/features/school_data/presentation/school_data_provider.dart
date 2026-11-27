@@ -1,3 +1,5 @@
+// Generated with Claude, updated with Antigravity (Gemini 4 Hydrogen (High)), reviewed by Tamirat Petros
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../auth/presentation/auth_controller.dart';
@@ -125,22 +127,6 @@ class SchoolDataController extends Notifier<SchoolData> {
           endDate: endDate,
         ),
         ...state.schedule,
-      ],
-    );
-  }
-
-  void sendMessage(String threadId, String text) {
-    final now = DateTime.now();
-    state = state.copyWith(
-      messages: [
-        ...state.messages,
-        ChatMessage(
-          id: 'm-${now.microsecondsSinceEpoch}',
-          threadId: threadId,
-          sender: 'You',
-          text: text,
-          sentAt: now,
-        ),
       ],
     );
   }

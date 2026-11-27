@@ -77,7 +77,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             AppRoutes.parentMessages,
             'Messages',
             Icons.chat_bubble_outline,
-            (_) => const MessagesScreen(),
+            (_) => const _PendingMessagesScreen(),
           ),
         ],
       ),
@@ -106,7 +106,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             AppRoutes.teacherMessages,
             'Messages',
             Icons.chat_bubble_outline,
-            (_) => const MessagesScreen(),
+            (_) => const _PendingMessagesScreen(),
           ),
         ],
       ),
@@ -272,5 +272,20 @@ class _RoleShell extends ConsumerWidget {
       ),
     ),
     body: child,
+  );
+}
+
+class _PendingMessagesScreen extends StatelessWidget {
+  const _PendingMessagesScreen();
+
+  @override
+  Widget build(BuildContext context) => const Center(
+    child: Padding(
+      padding: EdgeInsets.all(24),
+      child: Text(
+        'Messages are implemented in PR #8 (feature/messaging).',
+        textAlign: TextAlign.center,
+      ),
+    ),
   );
 }

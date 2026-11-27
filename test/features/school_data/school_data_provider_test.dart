@@ -1,3 +1,5 @@
+// Generated with Claude, reviewed by Tamirat Petros
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:parentlink/features/school_data/domain/school_record.dart';
@@ -59,17 +61,6 @@ void main() {
     expect(reports, hasLength(before + 1));
     expect(reports.last.studentId, 's-104');
     expect(reports.last.description, 'Shared class materials.');
-  });
-
-  test('a parent message is added to its student conversation', () {
-    final before = container.read(schoolDataProvider).messages.length;
-    container
-        .read(schoolDataProvider.notifier)
-        .sendMessage('s-101', 'Thank you for the update.');
-    final messages = container.read(schoolDataProvider).messages;
-    expect(messages, hasLength(before + 1));
-    expect(messages.last.threadId, 's-101');
-    expect(messages.last.text, 'Thank you for the update.');
   });
 
   test('school leader can add an announcement to the feed', () {

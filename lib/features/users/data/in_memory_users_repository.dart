@@ -1,3 +1,5 @@
+// Generated with Claude, reviewed by Tamirat Petros
+
 import '../../auth/domain/user.dart';
 import '../domain/users_repository.dart';
 

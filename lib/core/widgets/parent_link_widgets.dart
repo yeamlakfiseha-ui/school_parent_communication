@@ -1,3 +1,5 @@
+// Generated with Claude, reviewed by Tamirat Petros
+
 import 'package:flutter/material.dart';
 
 class PageIntro extends StatelessWidget {

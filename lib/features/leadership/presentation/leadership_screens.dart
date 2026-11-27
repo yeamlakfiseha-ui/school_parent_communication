@@ -1,3 +1,5 @@
+// Generated with Claude, updated with Antigravity (Gemini 4 Hydrogen (High)), reviewed by Tamirat Petros
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -311,6 +313,7 @@ class _PostAnnouncementScreenState
       firstDate: DateTime.now().subtract(const Duration(days: 1)),
       lastDate: DateTime.now().add(const Duration(days: 365)),
     );
+    if (!mounted) return;
     if (chosen != null) {
       setState(() {
         if (start) {

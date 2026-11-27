@@ -1,3 +1,5 @@
+// Generated with Claude, reviewed by Tamirat Petros
+
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'school_record.freezed.dart';
@@ -94,18 +96,4 @@ abstract class ScheduleItem with _$ScheduleItem {
 
   factory ScheduleItem.fromJson(Map<String, dynamic> json) =>
       _$ScheduleItemFromJson(json);
-}
-
-@freezed
-abstract class ChatMessage with _$ChatMessage {
-  const factory ChatMessage({
-    required String id,
-    required String threadId,
-    required String sender,
-    required String text,
-    required DateTime sentAt,
-  }) = _ChatMessage;
-
-  factory ChatMessage.fromJson(Map<String, dynamic> json) =>
-      _$ChatMessageFromJson(json);
 }

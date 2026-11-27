@@ -1,3 +1,5 @@
+// Generated with Claude, reviewed by Tamirat Petros
+
 import 'school_record.dart';
 
 class SchoolData {
@@ -8,7 +10,6 @@ class SchoolData {
     required this.checkInOut,
     required this.announcements,
     required this.schedule,
-    required this.messages,
   });
 
   final List<AttendanceRecord> attendance;
@@ -17,7 +18,6 @@ class SchoolData {
   final List<CheckInOutRecord> checkInOut;
   final List<SchoolAnnouncement> announcements;
   final List<ScheduleItem> schedule;
-  final List<ChatMessage> messages;
 
   SchoolData copyWith({
     List<AttendanceRecord>? attendance,
@@ -26,7 +26,6 @@ class SchoolData {
     List<CheckInOutRecord>? checkInOut,
     List<SchoolAnnouncement>? announcements,
     List<ScheduleItem>? schedule,
-    List<ChatMessage>? messages,
   }) => SchoolData(
     attendance: attendance ?? this.attendance,
     grades: grades ?? this.grades,
@@ -34,7 +33,6 @@ class SchoolData {
     checkInOut: checkInOut ?? this.checkInOut,
     announcements: announcements ?? this.announcements,
     schedule: schedule ?? this.schedule,
-    messages: messages ?? this.messages,
   );
 }
 
