@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/widgets/parent_link_widgets.dart';
-import '../../school_data/data/in_memory_school_repository.dart';
 import '../../school_data/presentation/school_data_provider.dart';
+import '../../students/domain/student.dart';
+import '../../students/presentation/students_provider.dart';
 
 class AnnouncementsScreen extends ConsumerWidget {
   const AnnouncementsScreen({super.key});
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final data = ref.watch(schoolDataProvider);
@@ -105,6 +107,7 @@ class AnnouncementsScreen extends ConsumerWidget {
 
 class MessagesScreen extends ConsumerStatefulWidget {
   const MessagesScreen({super.key});
+
   @override
   ConsumerState<MessagesScreen> createState() => _MessagesScreenState();
 }
@@ -112,6 +115,7 @@ class MessagesScreen extends ConsumerStatefulWidget {
 class _MessagesScreenState extends ConsumerState<MessagesScreen> {
   String? _threadId;
   final _message = TextEditingController();
+
   @override
   void dispose() {
     _message.dispose();
@@ -121,6 +125,8 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
   @override
   Widget build(BuildContext context) {
     final data = ref.watch(schoolDataProvider);
+    final students =
+        ref.watch(studentsProvider).asData?.value ?? const <Student>[];
     if (_threadId == null) {
       return ListView(
         padding: const EdgeInsets.only(bottom: 20),
@@ -130,7 +136,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
             title: 'Messages',
             subtitle: 'A direct line between home and school.',
           ),
-          for (final student in demoStudents.take(2))
+          for (final student in students.take(2))
             Builder(
               builder: (context) {
                 final messages =
@@ -170,9 +176,12 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
         ],
       );
     }
-    final student = demoStudents.firstWhere(
+    if (students.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    final student = students.firstWhere(
       (item) => item.id == _threadId,
-      orElse: () => demoStudents.first,
+      orElse: () => students.first,
     );
     final messages =
         data.messages.where((item) => item.threadId == student.id).toList()

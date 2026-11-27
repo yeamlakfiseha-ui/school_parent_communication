@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../auth/presentation/auth_controller.dart';
 import '../data/in_memory_school_repository.dart';
 import '../domain/school_record.dart';
 import '../domain/school_repository.dart';
@@ -16,6 +17,12 @@ class SchoolDataController extends Notifier<SchoolData> {
   @override
   SchoolData build() => ref.read(schoolRepositoryProvider).loadInitialData();
 
+  String _actorName(String fallback) {
+    final user = ref.read(authControllerProvider).asData?.value;
+    if (user == null || user.name.trim().isEmpty) return fallback;
+    return user.name;
+  }
+
   void setAttendance(String studentId, AttendanceStatus status) {
     final today = DateTime.now();
     final remaining = state.attendance.where(
@@ -29,7 +36,7 @@ class SchoolDataController extends Notifier<SchoolData> {
           studentId: studentId,
           date: today,
           status: status,
-          recordedBy: 'Ms. Selam',
+          recordedBy: _actorName('Ms. Selam'),
         ),
       ],
     );
@@ -39,6 +46,7 @@ class SchoolDataController extends Notifier<SchoolData> {
     required String studentId,
     required String subject,
     required double score,
+    String term = 'Term 1',
   }) {
     final now = DateTime.now();
     state = state.copyWith(
@@ -49,9 +57,9 @@ class SchoolDataController extends Notifier<SchoolData> {
           studentId: studentId,
           subject: subject,
           score: score,
-          term: 'Term 1',
+          term: term,
           date: now,
-          recordedBy: 'Ms. Selam',
+          recordedBy: _actorName('Ms. Selam'),
         ),
       ],
     );
@@ -73,7 +81,7 @@ class SchoolDataController extends Notifier<SchoolData> {
           severity: severity,
           status: 'New',
           date: now,
-          reportedBy: 'Ms. Selam',
+          reportedBy: _actorName('Ms. Selam'),
         ),
       ],
     );
@@ -93,7 +101,7 @@ class SchoolDataController extends Notifier<SchoolData> {
           message: message,
           kind: kind,
           date: now,
-          createdBy: 'Principal',
+          createdBy: _actorName('Principal'),
         ),
         ...state.announcements,
       ],
@@ -147,7 +155,7 @@ class SchoolDataController extends Notifier<SchoolData> {
           studentId: studentId,
           checkedIn: checkedIn,
           time: now,
-          recordedBy: 'Ms. Selam',
+          recordedBy: _actorName('Ms. Selam'),
         ),
       ],
     );

@@ -4,21 +4,35 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/router/routes.dart';
 import '../../../core/widgets/parent_link_widgets.dart';
-import '../../school_data/data/in_memory_school_repository.dart';
 import '../../school_data/domain/school_record.dart';
 import '../../school_data/presentation/school_data_provider.dart';
+import '../../students/domain/student.dart';
+import '../../students/presentation/students_provider.dart';
 
 class SchoolOverviewScreen extends ConsumerWidget {
   const SchoolOverviewScreen({super.key});
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final data = ref.watch(schoolDataProvider);
-    final attendanceToday = data.attendance.where((item) {
-      final now = DateTime.now();
-      return item.date.year == now.year &&
-          item.date.month == now.month &&
-          item.date.day == now.day;
-    }).toList();
+    final students =
+        ref.watch(studentsProvider).asData?.value ?? const <Student>[];
+    final now = DateTime.now();
+    final attendanceToday = data.attendance
+        .where(
+          (item) =>
+              item.date.year == now.year &&
+              item.date.month == now.month &&
+              item.date.day == now.day,
+        )
+        .toList();
+
+    final groupedStudents = <String, List<Student>>{};
+    for (final student in students) {
+      final key = '${student.grade} · ${student.section}';
+      groupedStudents.putIfAbsent(key, () => []).add(student);
+    }
+
     return ListView(
       padding: const EdgeInsets.only(bottom: 24),
       children: [
@@ -34,7 +48,7 @@ class SchoolOverviewScreen extends ConsumerWidget {
               Expanded(
                 child: StatTile(
                   label: 'Students',
-                  value: '${demoStudents.length}',
+                  value: '${students.length}',
                   icon: Icons.groups_outlined,
                 ),
               ),
@@ -71,28 +85,21 @@ class SchoolOverviewScreen extends ConsumerWidget {
           ),
         ),
         const SectionHeading('By grade and section'),
-        for (final group in {
-          'Grade 8 · A': ['s-101', 's-102'],
-          'Grade 8 · B': ['s-103'],
-          'Grade 7 · A': ['s-104'],
-        }.entries)
+        for (final group in groupedStudents.entries)
           Card(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
             child: ExpansionTile(
               title: Text(group.key),
               subtitle: Text('${group.value.length} students'),
               children: [
-                for (final id in group.value)
+                for (final student in group.value)
                   Builder(
                     builder: (context) {
-                      final student = demoStudents.firstWhere(
-                        (item) => item.id == id,
-                      );
                       final grades = data.grades
-                          .where((item) => item.studentId == id)
+                          .where((item) => item.studentId == student.id)
                           .toList();
                       final average = grades.isEmpty
-                          ? 0
+                          ? 0.0
                           : grades
                                     .map((item) => item.score)
                                     .reduce((a, b) => a + b) /
@@ -124,19 +131,23 @@ class SchoolOverviewScreen extends ConsumerWidget {
   }
 }
 
-class PostAnnouncementScreen extends StatefulWidget {
+class PostAnnouncementScreen extends ConsumerStatefulWidget {
   const PostAnnouncementScreen({super.key});
+
   @override
-  State<PostAnnouncementScreen> createState() => _PostAnnouncementScreenState();
+  ConsumerState<PostAnnouncementScreen> createState() =>
+      _PostAnnouncementScreenState();
 }
 
-class _PostAnnouncementScreenState extends State<PostAnnouncementScreen> {
+class _PostAnnouncementScreenState
+    extends ConsumerState<PostAnnouncementScreen> {
   var _isAnnouncement = true;
   final _title = TextEditingController();
   final _message = TextEditingController();
   var _kind = 'Event';
   var _startDate = DateTime.now().add(const Duration(days: 7));
   var _endDate = DateTime.now().add(const Duration(days: 7));
+
   @override
   void dispose() {
     _title.dispose();
@@ -145,156 +156,152 @@ class _PostAnnouncementScreenState extends State<PostAnnouncementScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => Consumer(
-    builder: (context, ref, _) => ListView(
-      padding: const EdgeInsets.only(bottom: 24),
-      children: [
-        const PageIntro(
-          eyebrow: 'School communication',
-          title: 'Create an update',
-          subtitle: 'Share a notice or add an important date.',
+  Widget build(BuildContext context) => ListView(
+    padding: const EdgeInsets.only(bottom: 24),
+    children: [
+      const PageIntro(
+        eyebrow: 'School communication',
+        title: 'Create an update',
+        subtitle: 'Share a notice or add an important date.',
+      ),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: SegmentedButton<bool>(
+          segments: const [
+            ButtonSegment(value: true, label: Text('Announcement')),
+            ButtonSegment(value: false, label: Text('Schedule')),
+          ],
+          selected: {_isAnnouncement},
+          showSelectedIcon: false,
+          onSelectionChanged: (value) =>
+              setState(() => _isAnnouncement = value.first),
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: SegmentedButton<bool>(
-            segments: const [
-              ButtonSegment(value: true, label: Text('Announcement')),
-              ButtonSegment(value: false, label: Text('Schedule')),
-            ],
-            selected: {_isAnnouncement},
-            showSelectedIcon: false,
-            onSelectionChanged: (value) =>
-                setState(() => _isAnnouncement = value.first),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Card(
-            child: Padding(
-              padding: const EdgeInsets.all(18),
-              child: Column(
-                children: [
-                  TextField(
-                    controller: _title,
-                    decoration: const InputDecoration(
-                      labelText: 'Title',
-                      prefixIcon: Icon(Icons.title),
-                    ),
+      ),
+      Padding(
+        padding: const EdgeInsets.all(16),
+        child: Card(
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              children: [
+                TextField(
+                  controller: _title,
+                  decoration: const InputDecoration(
+                    labelText: 'Title',
+                    prefixIcon: Icon(Icons.title),
                   ),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: _message,
+                  maxLines: 4,
+                  decoration: InputDecoration(
+                    labelText: _isAnnouncement ? 'Message' : 'Description',
+                    alignLabelWithHint: true,
+                    prefixIcon: const Icon(Icons.notes),
+                  ),
+                ),
+                if (_isAnnouncement) ...[
                   const SizedBox(height: 14),
-                  TextField(
-                    controller: _message,
-                    maxLines: 4,
-                    decoration: InputDecoration(
-                      labelText: _isAnnouncement ? 'Message' : 'Description',
-                      alignLabelWithHint: true,
-                      prefixIcon: const Icon(Icons.notes),
-                    ),
-                  ),
-                  if (_isAnnouncement) ...[
-                    const SizedBox(height: 14),
-                    DropdownButtonFormField<String>(
-                      initialValue: _kind,
-                      decoration: const InputDecoration(labelText: 'Type'),
-                      items: const [
-                        DropdownMenuItem(value: 'Event', child: Text('Event')),
-                        DropdownMenuItem(
-                          value: 'Meeting',
-                          child: Text('Meeting'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'Schedule change',
-                          child: Text('Schedule change'),
-                        ),
-                      ],
-                      onChanged: (value) {
-                        if (value != null) setState(() => _kind = value);
-                      },
-                    ),
-                  ] else ...[
-                    const SizedBox(height: 14),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () => _chooseDate(start: true),
-                            icon: const Icon(Icons.calendar_today),
-                            label: Text('Starts ${shortDate(_startDate)}'),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () => _chooseDate(start: false),
-                            icon: const Icon(Icons.event),
-                            label: Text('Ends ${shortDate(_endDate)}'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: () {
-                        if (_title.text.trim().isEmpty ||
-                            _message.text.trim().isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Add a title and message first.'),
-                            ),
-                          );
-                          return;
-                        }
-                        if (_isAnnouncement) {
-                          ref
-                              .read(schoolDataProvider.notifier)
-                              .addAnnouncement(
-                                title: _title.text.trim(),
-                                message: _message.text.trim(),
-                                kind: _kind,
-                              );
-                        } else {
-                          ref
-                              .read(schoolDataProvider.notifier)
-                              .addSchedule(
-                                title: _title.text.trim(),
-                                description: _message.text.trim(),
-                                startDate: _startDate,
-                                endDate: _endDate,
-                              );
-                        }
-                        _title.clear();
-                        _message.clear();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Saved to the in-memory school feed.',
-                            ),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.publish),
-                      label: Text(
-                        _isAnnouncement
-                            ? 'Post announcement'
-                            : 'Add schedule item',
+                  DropdownButtonFormField<String>(
+                    initialValue: _kind,
+                    decoration: const InputDecoration(labelText: 'Type'),
+                    items: const [
+                      DropdownMenuItem(value: 'Event', child: Text('Event')),
+                      DropdownMenuItem(
+                        value: 'Meeting',
+                        child: Text('Meeting'),
                       ),
-                    ),
+                      DropdownMenuItem(
+                        value: 'Schedule change',
+                        child: Text('Schedule change'),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) setState(() => _kind = value);
+                    },
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Push notifications and shared storage are part of Milestone 2.',
-                    style: Theme.of(context).textTheme.bodySmall,
+                ] else ...[
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => _chooseDate(start: true),
+                          icon: const Icon(Icons.calendar_today),
+                          label: Text('Starts ${shortDate(_startDate)}'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => _chooseDate(start: false),
+                          icon: const Icon(Icons.event),
+                          label: Text('Ends ${shortDate(_endDate)}'),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
-              ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      if (_title.text.trim().isEmpty ||
+                          _message.text.trim().isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Add a title and message first.'),
+                          ),
+                        );
+                        return;
+                      }
+                      if (_isAnnouncement) {
+                        ref
+                            .read(schoolDataProvider.notifier)
+                            .addAnnouncement(
+                              title: _title.text.trim(),
+                              message: _message.text.trim(),
+                              kind: _kind,
+                            );
+                      } else {
+                        ref
+                            .read(schoolDataProvider.notifier)
+                            .addSchedule(
+                              title: _title.text.trim(),
+                              description: _message.text.trim(),
+                              startDate: _startDate,
+                              endDate: _endDate,
+                            );
+                      }
+                      _title.clear();
+                      _message.clear();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Saved to the in-memory school feed.'),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.publish),
+                    label: Text(
+                      _isAnnouncement
+                          ? 'Post announcement'
+                          : 'Add schedule item',
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Push notifications and shared storage are part of Milestone 2.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
             ),
           ),
         ),
-      ],
-    ),
+      ),
+    ],
   );
 
   Future<void> _chooseDate({required bool start}) async {
@@ -304,7 +311,7 @@ class _PostAnnouncementScreenState extends State<PostAnnouncementScreen> {
       firstDate: DateTime.now().subtract(const Duration(days: 1)),
       lastDate: DateTime.now().add(const Duration(days: 365)),
     );
-    if (chosen != null)
+    if (chosen != null) {
       setState(() {
         if (start) {
           _startDate = chosen;
@@ -313,5 +320,6 @@ class _PostAnnouncementScreenState extends State<PostAnnouncementScreen> {
           _endDate = chosen;
         }
       });
+    }
   }
 }

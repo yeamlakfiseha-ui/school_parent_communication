@@ -5,14 +5,19 @@ import 'package:go_router/go_router.dart';
 import '../../../core/router/routes.dart';
 import '../../../core/widgets/parent_link_widgets.dart';
 import '../../auth/domain/user.dart';
-import '../../school_data/data/in_memory_school_repository.dart';
+import '../../students/domain/student.dart';
+import '../../students/presentation/students_provider.dart';
 import '../../users/presentation/users_provider.dart';
 
 class AdminHomeScreen extends ConsumerWidget {
   const AdminHomeScreen({super.key});
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final users = ref.watch(usersProvider);
+    final students =
+        ref.watch(studentsProvider).asData?.value ?? const <Student>[];
+
     return ListView(
       children: [
         const PageIntro(
@@ -34,7 +39,7 @@ class AdminHomeScreen extends ConsumerWidget {
               Expanded(
                 child: StatTile(
                   label: 'Students',
-                  value: '${demoStudents.length}',
+                  value: '${students.length}',
                   icon: Icons.school_outlined,
                 ),
               ),
@@ -66,6 +71,7 @@ class AdminHomeScreen extends ConsumerWidget {
 
 class ManageUsersScreen extends ConsumerStatefulWidget {
   const ManageUsersScreen({super.key});
+
   @override
   ConsumerState<ManageUsersScreen> createState() => _ManageUsersScreenState();
 }
@@ -75,7 +81,8 @@ class _ManageUsersScreenState extends ConsumerState<ManageUsersScreen> {
   final _email = TextEditingController();
   final _csv = TextEditingController();
   var _role = UserRole.parent;
-  var _linkedStudent = demoStudents.first.id;
+  String? _linkedStudent;
+
   @override
   void dispose() {
     _name.dispose();
@@ -88,6 +95,13 @@ class _ManageUsersScreenState extends ConsumerState<ManageUsersScreen> {
   Widget build(BuildContext context) {
     final users = ref.watch(usersProvider);
     final linkedChildren = ref.watch(linkedChildrenProvider);
+    final students =
+        ref.watch(studentsProvider).asData?.value ?? const <Student>[];
+    final selectedStudent =
+        students.any((student) => student.id == _linkedStudent)
+        ? _linkedStudent
+        : (students.isNotEmpty ? students.first.id : null);
+
     return ListView(
       padding: const EdgeInsets.only(bottom: 24),
       children: [
@@ -116,57 +130,6 @@ class _ManageUsersScreenState extends ConsumerState<ManageUsersScreen> {
                           labelText: 'Full name',
                         ),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Card(
-                          child: ExpansionTile(
-                            leading: const Icon(Icons.upload_file_outlined),
-                            title: const Text(
-                              'Import CSV text',
-                              style: TextStyle(fontWeight: FontWeight.w700),
-                            ),
-                            subtitle: const Text(
-                              'Paste name,email,role,studentId rows',
-                            ),
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.fromLTRB(
-                                  16,
-                                  0,
-                                  16,
-                                  18,
-                                ),
-                                child: Column(
-                                  children: [
-                                    TextField(
-                                      controller: _csv,
-                                      minLines: 3,
-                                      maxLines: 6,
-                                      decoration: const InputDecoration(
-                                        labelText: 'CSV rows',
-                                        hintText:
-                                            'Name,Email,Role,Student ID\nAster Bekele,aster@example.test,parent,s-101',
-                                        alignLabelWithHint: true,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    SizedBox(
-                                      width: double.infinity,
-                                      child: OutlinedButton.icon(
-                                        onPressed: _importCsv,
-                                        icon: const Icon(
-                                          Icons.file_download_outlined,
-                                        ),
-                                        label: const Text('Import rows'),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
                       const SizedBox(height: 10),
                       TextField(
                         controller: _email,
@@ -193,20 +156,21 @@ class _ManageUsersScreenState extends ConsumerState<ManageUsersScreen> {
                       if (_role == UserRole.parent) ...[
                         const SizedBox(height: 10),
                         DropdownButtonFormField<String>(
-                          initialValue: _linkedStudent,
+                          initialValue: selectedStudent,
                           decoration: const InputDecoration(
                             labelText: 'Link to child',
                           ),
                           items: [
-                            for (final student in demoStudents)
+                            for (final student in students)
                               DropdownMenuItem(
                                 value: student.id,
                                 child: Text(student.name),
                               ),
                           ],
                           onChanged: (value) {
-                            if (value != null)
+                            if (value != null) {
                               setState(() => _linkedStudent = value);
+                            }
                           },
                         ),
                       ],
@@ -214,9 +178,52 @@ class _ManageUsersScreenState extends ConsumerState<ManageUsersScreen> {
                       SizedBox(
                         width: double.infinity,
                         child: FilledButton.icon(
-                          onPressed: _addUser,
+                          onPressed: () => _addUser(selectedStudent),
                           icon: const Icon(Icons.add),
                           label: const Text('Add account'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Card(
+            child: ExpansionTile(
+              leading: const Icon(Icons.upload_file_outlined),
+              title: const Text(
+                'Import CSV text',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+              subtitle: const Text('Paste name,email,role,studentId rows'),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
+                  child: Column(
+                    children: [
+                      TextField(
+                        controller: _csv,
+                        minLines: 3,
+                        maxLines: 6,
+                        decoration: const InputDecoration(
+                          labelText: 'CSV rows',
+                          hintText:
+                              'Name,Email,Role,Student ID\nAster Bekele,aster@example.test,parent,s-101',
+                          alignLabelWithHint: true,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () => _importCsv(students),
+                          icon: const Icon(Icons.file_download_outlined),
+                          label: const Text('Import rows'),
                         ),
                       ),
                     ],
@@ -234,7 +241,7 @@ class _ManageUsersScreenState extends ConsumerState<ManageUsersScreen> {
               leading: CircleAvatar(child: Icon(_roleIcon(user.role))),
               title: Text(user.name),
               subtitle: Text(
-                '${user.email}\n${_roleLabel(user.role)}${user.role == UserRole.parent ? ' · ${_linkedStudentName(linkedChildren[user.id])}' : ''}',
+                '${user.email}\n${_roleLabel(user.role)}${user.role == UserRole.parent ? ' · ${_linkedStudentName(linkedChildren[user.id], students)}' : ''}',
               ),
               isThreeLine: true,
               trailing: IconButton(
@@ -255,7 +262,7 @@ class _ManageUsersScreenState extends ConsumerState<ManageUsersScreen> {
     );
   }
 
-  void _addUser() {
+  void _addUser(String? selectedStudent) {
     if (_name.text.trim().isEmpty || !_email.text.contains('@')) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Enter a name and valid email address.')),
@@ -265,8 +272,9 @@ class _ManageUsersScreenState extends ConsumerState<ManageUsersScreen> {
     final id = ref
         .read(usersProvider.notifier)
         .add(name: _name.text.trim(), email: _email.text.trim(), role: _role);
-    if (_role == UserRole.parent)
-      ref.read(linkedChildrenProvider.notifier).link(id, _linkedStudent);
+    if (_role == UserRole.parent && selectedStudent != null) {
+      ref.read(linkedChildrenProvider.notifier).link(id, selectedStudent);
+    }
     _name.clear();
     _email.clear();
     ScaffoldMessenger.of(
@@ -274,7 +282,7 @@ class _ManageUsersScreenState extends ConsumerState<ManageUsersScreen> {
     ).showSnackBar(const SnackBar(content: Text('Demo account added.')));
   }
 
-  void _importCsv() {
+  void _importCsv(List<Student> students) {
     final lines = _csv.text.trim().split(RegExp(r'\r?\n'));
     var imported = 0;
     for (var index = 0; index < lines.length; index++) {
@@ -291,17 +299,17 @@ class _ManageUsersScreenState extends ConsumerState<ManageUsersScreen> {
         'appadmin' || 'admin' => UserRole.appAdmin,
         _ => null,
       };
-      if (columns[0].isEmpty || !columns[1].contains('@') || role == null)
+      if (columns[0].isEmpty || !columns[1].contains('@') || role == null) {
         continue;
+      }
       final id = ref
           .read(usersProvider.notifier)
           .add(name: columns[0], email: columns[1], role: role);
-      if (role == UserRole.parent) {
+      if (role == UserRole.parent && students.isNotEmpty) {
         final requestedChild = columns.length > 3 ? columns[3] : '';
-        final studentId =
-            demoStudents.any((student) => student.id == requestedChild)
+        final studentId = students.any((student) => student.id == requestedChild)
             ? requestedChild
-            : demoStudents.first.id;
+            : students.first.id;
         ref.read(linkedChildrenProvider.notifier).link(id, studentId);
       }
       imported++;
@@ -325,14 +333,16 @@ String _roleLabel(UserRole role) => switch (role) {
   UserRole.schoolLeader => 'School leader',
   UserRole.appAdmin => 'App administrator',
 };
+
 IconData _roleIcon(UserRole role) => switch (role) {
   UserRole.parent => Icons.family_restroom,
   UserRole.teacher => Icons.cast_for_education,
   UserRole.schoolLeader => Icons.account_balance,
   UserRole.appAdmin => Icons.admin_panel_settings_outlined,
 };
-String _linkedStudentName(String? id) =>
-    demoStudents
+
+String _linkedStudentName(String? id, List<Student> students) =>
+    students
         .where((student) => student.id == id)
         .map((student) => 'Linked to ${student.name}')
         .firstOrNull ??

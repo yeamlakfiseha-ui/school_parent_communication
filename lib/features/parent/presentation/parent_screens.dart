@@ -3,15 +3,30 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/widgets/parent_link_widgets.dart';
-import '../../school_data/data/in_memory_school_repository.dart';
-import '../../school_data/presentation/school_data_provider.dart';
+import '../../auth/presentation/auth_controller.dart';
 import '../../school_data/domain/school_record.dart';
+import '../../school_data/presentation/school_data_provider.dart';
+import '../../students/domain/student.dart';
+import '../../students/presentation/students_provider.dart';
+import '../../users/presentation/users_provider.dart';
 
 class ParentHomeScreen extends ConsumerWidget {
   const ParentHomeScreen({super.key});
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final data = ref.watch(schoolDataProvider);
+    final students =
+        ref.watch(studentsProvider).asData?.value ?? const <Student>[];
+    final currentUser = ref.watch(authControllerProvider).asData?.value;
+    final linkedChildren = ref.watch(linkedChildrenProvider);
+    final linkedId = currentUser == null
+        ? null
+        : linkedChildren[currentUser.id];
+    final visibleStudents = linkedId != null
+        ? students.where((student) => student.id == linkedId).toList()
+        : students.take(2).toList();
+
     return ListView(
       padding: const EdgeInsets.only(bottom: 24),
       children: [
@@ -21,7 +36,7 @@ class ParentHomeScreen extends ConsumerWidget {
           subtitle: 'Here is what is happening at school today.',
         ),
         const SectionHeading('Your children'),
-        for (final student in demoStudents.take(2))
+        for (final student in visibleStudents)
           Card(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             child: ListTile(
@@ -60,11 +75,17 @@ class ParentHomeScreen extends ConsumerWidget {
 class ChildDetailScreen extends ConsumerWidget {
   const ChildDetailScreen({super.key, required this.studentId});
   final String studentId;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final student = demoStudents.firstWhere(
+    final students =
+        ref.watch(studentsProvider).asData?.value ?? const <Student>[];
+    if (students.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    final student = students.firstWhere(
       (item) => item.id == studentId,
-      orElse: () => demoStudents.first,
+      orElse: () => students.first,
     );
     final data = ref.watch(schoolDataProvider);
     final attendance =
@@ -81,6 +102,7 @@ class ChildDetailScreen extends ConsumerWidget {
     final checkIns =
         data.checkInOut.where((item) => item.studentId == student.id).toList()
           ..sort((a, b) => b.time.compareTo(a.time));
+
     return DefaultTabController(
       length: 4,
       child: Column(
@@ -207,10 +229,12 @@ class _RecordLine extends StatelessWidget {
     required this.subtitle,
     required this.badge,
   });
+
   final IconData icon;
   final String title;
   final String subtitle;
   final String badge;
+
   @override
   Widget build(BuildContext context) => Card(
     margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
@@ -240,32 +264,34 @@ String _statusName(AttendanceStatus status) => switch (status) {
 class TermSummaryScreen extends ConsumerWidget {
   const TermSummaryScreen({super.key, required this.studentId});
   final String studentId;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final data = ref.watch(schoolDataProvider);
-    final student = demoStudents.firstWhere(
+    final students =
+        ref.watch(studentsProvider).asData?.value ?? const <Student>[];
+    if (students.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    final student = students.firstWhere(
       (item) => item.id == studentId,
-      orElse: () => demoStudents.first,
+      orElse: () => students.first,
     );
-    final grades = data.grades
-        .where((item) => item.studentId == student.id)
-        .toList();
+    final grades =
+        data.grades.where((item) => item.studentId == student.id).toList()
+          ..sort((a, b) => b.score.compareTo(a.score));
     final attendance = data.attendance
         .where((item) => item.studentId == student.id)
         .toList();
     final average = grades.isEmpty
-        ? 0
+        ? 0.0
         : grades.map((item) => item.score).reduce((a, b) => a + b) /
               grades.length;
     final present = attendance
         .where((item) => item.status == AttendanceStatus.present)
         .length;
-    final strongest = grades.isEmpty
-        ? 'No grades yet'
-        : (grades..sort((a, b) => b.score.compareTo(a.score))).first.subject;
-    final lowest = grades.isEmpty
-        ? 'No grades yet'
-        : (grades..sort((a, b) => a.score.compareTo(b.score))).first.subject;
+    final strongest = grades.isEmpty ? 'No grades yet' : grades.first.subject;
+    final lowest = grades.isEmpty ? 'No grades yet' : grades.last.subject;
     final behaviorCount = data.behaviorReports
         .where(
           (item) =>
@@ -273,6 +299,7 @@ class TermSummaryScreen extends ConsumerWidget {
               item.severity != BehaviorSeverity.low,
         )
         .length;
+
     return ListView(
       padding: const EdgeInsets.only(bottom: 24),
       children: [

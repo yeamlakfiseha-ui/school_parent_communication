@@ -4,15 +4,18 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/router/routes.dart';
 import '../../../core/widgets/parent_link_widgets.dart';
-import '../../school_data/data/in_memory_school_repository.dart';
 import '../../school_data/domain/school_record.dart';
 import '../../school_data/presentation/school_data_provider.dart';
+import '../../students/domain/student.dart';
+import '../../students/presentation/students_provider.dart';
 
 class TeacherHomeScreen extends ConsumerWidget {
   const TeacherHomeScreen({super.key});
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(schoolDataProvider);
+    final students = ref.watch(studentsProvider).asData?.value ?? const <Student>[];
     final today = DateTime.now();
     final todayRecords = state.attendance
         .where(
@@ -31,7 +34,7 @@ class TeacherHomeScreen extends ConsumerWidget {
         const PageIntro(
           eyebrow: 'Teacher workspace',
           title: 'Your class',
-          subtitle: 'Grade 8 · Sections A and B · Homeroom',
+          subtitle: 'Homeroom · Grades 7 and 8',
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -47,7 +50,7 @@ class TeacherHomeScreen extends ConsumerWidget {
               Expanded(
                 child: StatTile(
                   label: 'Students',
-                  value: '${demoStudents.length}',
+                  value: '${students.length}',
                   icon: Icons.groups_outlined,
                 ),
               ),
@@ -62,7 +65,7 @@ class TeacherHomeScreen extends ConsumerWidget {
             label: const Text('Check-in'),
           ),
         ),
-        for (final student in demoStudents)
+        for (final student in students)
           _StudentAttendanceRow(
             studentId: student.id,
             name: student.name,
@@ -99,9 +102,11 @@ class _StudentAttendanceRow extends ConsumerWidget {
     required this.name,
     required this.detail,
   });
+
   final String studentId;
   final String name;
   final String detail;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(schoolDataProvider);
@@ -162,15 +167,16 @@ class _StudentAttendanceRow extends ConsumerWidget {
   }
 }
 
-class ReportEntryScreen extends StatefulWidget {
+class ReportEntryScreen extends ConsumerStatefulWidget {
   const ReportEntryScreen({super.key});
+
   @override
-  State<ReportEntryScreen> createState() => _ReportEntryScreenState();
+  ConsumerState<ReportEntryScreen> createState() => _ReportEntryScreenState();
 }
 
-class _ReportEntryScreenState extends State<ReportEntryScreen> {
+class _ReportEntryScreenState extends ConsumerState<ReportEntryScreen> {
   var _isGrade = true;
-  String _studentId = demoStudents.first.id;
+  String? _studentId;
   final _subject = TextEditingController(text: 'Mathematics');
   final _score = TextEditingController();
   final _description = TextEditingController();
@@ -185,8 +191,15 @@ class _ReportEntryScreenState extends State<ReportEntryScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => Consumer(
-    builder: (context, ref, _) => ListView(
+  Widget build(BuildContext context) {
+    final students =
+        ref.watch(studentsProvider).asData?.value ?? const <Student>[];
+    final selectedStudentId =
+        students.any((student) => student.id == _studentId)
+        ? _studentId
+        : (students.isNotEmpty ? students.first.id : null);
+
+    return ListView(
       padding: const EdgeInsets.only(bottom: 28),
       children: [
         const PageIntro(
@@ -224,10 +237,10 @@ class _ReportEntryScreenState extends State<ReportEntryScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   DropdownButtonFormField<String>(
-                    initialValue: _studentId,
+                    initialValue: selectedStudentId,
                     decoration: const InputDecoration(labelText: 'Student'),
                     items: [
-                      for (final student in demoStudents)
+                      for (final student in students)
                         DropdownMenuItem(
                           value: student.id,
                           child: Text(student.name),
@@ -291,51 +304,53 @@ class _ReportEntryScreenState extends State<ReportEntryScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(
-                      onPressed: () {
-                        if (_isGrade) {
-                          final score = double.tryParse(_score.text);
-                          if (_subject.text.trim().isEmpty ||
-                              score == null ||
-                              score < 0 ||
-                              score > 100) {
-                            _showMessage(
-                              context,
-                              'Enter a subject and score from 0 to 100.',
-                            );
-                            return;
-                          }
-                          ref
-                              .read(schoolDataProvider.notifier)
-                              .addGrade(
-                                studentId: _studentId,
-                                subject: _subject.text.trim(),
-                                score: score,
+                      onPressed: selectedStudentId == null
+                          ? null
+                          : () {
+                              if (_isGrade) {
+                                final score = double.tryParse(_score.text);
+                                if (_subject.text.trim().isEmpty ||
+                                    score == null ||
+                                    score < 0 ||
+                                    score > 100) {
+                                  _showMessage(
+                                    context,
+                                    'Enter a subject and score from 0 to 100.',
+                                  );
+                                  return;
+                                }
+                                ref
+                                    .read(schoolDataProvider.notifier)
+                                    .addGrade(
+                                      studentId: selectedStudentId,
+                                      subject: _subject.text.trim(),
+                                      score: score,
+                                    );
+                                _score.clear();
+                              } else {
+                                if (_description.text.trim().isEmpty) {
+                                  _showMessage(
+                                    context,
+                                    'Add a short description first.',
+                                  );
+                                  return;
+                                }
+                                ref
+                                    .read(schoolDataProvider.notifier)
+                                    .addBehavior(
+                                      studentId: selectedStudentId,
+                                      description: _description.text.trim(),
+                                      severity: _severity,
+                                    );
+                                _description.clear();
+                              }
+                              _showMessage(
+                                context,
+                                _isGrade
+                                    ? 'Grade added to the sample records.'
+                                    : 'Behavior note added to the sample records.',
                               );
-                          _score.clear();
-                        } else {
-                          if (_description.text.trim().isEmpty) {
-                            _showMessage(
-                              context,
-                              'Add a short description first.',
-                            );
-                            return;
-                          }
-                          ref
-                              .read(schoolDataProvider.notifier)
-                              .addBehavior(
-                                studentId: _studentId,
-                                description: _description.text.trim(),
-                                severity: _severity,
-                              );
-                          _description.clear();
-                        }
-                        _showMessage(
-                          context,
-                          _isGrade
-                              ? 'Grade added to the sample records.'
-                              : 'Behavior note added to the sample records.',
-                        );
-                      },
+                            },
                       icon: const Icon(Icons.check),
                       label: const Text('Save report'),
                     ),
@@ -351,108 +366,124 @@ class _ReportEntryScreenState extends State<ReportEntryScreen> {
           ),
         ),
       ],
-    ),
-  );
+    );
+  }
 }
 
 class QrScannerScreen extends ConsumerStatefulWidget {
   const QrScannerScreen({super.key});
+
   @override
   ConsumerState<QrScannerScreen> createState() => _QrScannerScreenState();
 }
 
 class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
-  String _studentId = demoStudents.first.id;
+  String? _studentId;
   var _checkedIn = true;
+
   @override
-  Widget build(BuildContext context) => ListView(
-    padding: const EdgeInsets.only(bottom: 24),
-    children: [
-      const PageIntro(
-        eyebrow: 'Arrival log',
-        title: 'Student check-in',
-        subtitle: 'Milestone 1 demo: choose a student to simulate a QR scan.',
-      ),
-      Padding(
-        padding: const EdgeInsets.all(16),
-        child: Card(
-          child: Padding(
-            padding: const EdgeInsets.all(22),
-            child: Column(
-              children: [
-                Container(
-                  width: 180,
-                  height: 180,
-                  decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(20),
+  Widget build(BuildContext context) {
+    final students =
+        ref.watch(studentsProvider).asData?.value ?? const <Student>[];
+    final selectedStudentId =
+        students.any((student) => student.id == _studentId)
+        ? _studentId
+        : (students.isNotEmpty ? students.first.id : null);
+
+    return ListView(
+      padding: const EdgeInsets.only(bottom: 24),
+      children: [
+        const PageIntro(
+          eyebrow: 'Arrival log',
+          title: 'Student check-in',
+          subtitle: 'Milestone 1 demo: choose a student to simulate a QR scan.',
+        ),
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.all(22),
+              child: Column(
+                children: [
+                  Container(
+                    width: 180,
+                    height: 180,
+                    decoration: BoxDecoration(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Icon(
+                      Icons.qr_code_2,
+                      size: 108,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                   ),
-                  child: Icon(
-                    Icons.qr_code_2,
-                    size: 108,
-                    color: Theme.of(context).colorScheme.primary,
+                  const SizedBox(height: 16),
+                  Text(
+                    'Camera scanning is planned for the next milestone.',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.titleMedium,
                   ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Camera scanning is planned for the next milestone.',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'For this walkthrough, select the student whose ID would be scanned.',
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 18),
-                DropdownButtonFormField<String>(
-                  initialValue: _studentId,
-                  decoration: const InputDecoration(labelText: 'Student'),
-                  items: [
-                    for (final student in demoStudents)
-                      DropdownMenuItem(
-                        value: student.id,
-                        child: Text(student.name),
-                      ),
-                  ],
-                  onChanged: (value) {
-                    if (value != null) setState(() => _studentId = value);
-                  },
-                ),
-                const SizedBox(height: 14),
-                SegmentedButton<bool>(
-                  segments: const [
-                    ButtonSegment(value: true, label: Text('Check in')),
-                    ButtonSegment(value: false, label: Text('Check out')),
-                  ],
-                  selected: {_checkedIn},
-                  onSelectionChanged: (value) =>
-                      setState(() => _checkedIn = value.first),
-                  showSelectedIcon: false,
-                ),
-                const SizedBox(height: 18),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    onPressed: () {
-                      ref
-                          .read(schoolDataProvider.notifier)
-                          .recordCheckIn(_studentId, checkedIn: _checkedIn);
-                      _showMessage(context, 'Check-in record added.');
+                  const SizedBox(height: 8),
+                  const Text(
+                    'For this walkthrough, select the student whose ID would be scanned.',
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 18),
+                  DropdownButtonFormField<String>(
+                    initialValue: selectedStudentId,
+                    decoration: const InputDecoration(labelText: 'Student'),
+                    items: [
+                      for (final student in students)
+                        DropdownMenuItem(
+                          value: student.id,
+                          child: Text(student.name),
+                        ),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) setState(() => _studentId = value);
                     },
-                    icon: const Icon(Icons.qr_code_scanner),
-                    label: const Text('Record scan'),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 14),
+                  SegmentedButton<bool>(
+                    segments: const [
+                      ButtonSegment(value: true, label: Text('Check in')),
+                      ButtonSegment(value: false, label: Text('Check out')),
+                    ],
+                    selected: {_checkedIn},
+                    onSelectionChanged: (value) =>
+                        setState(() => _checkedIn = value.first),
+                    showSelectedIcon: false,
+                  ),
+                  const SizedBox(height: 18),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: selectedStudentId == null
+                          ? null
+                          : () {
+                              ref
+                                  .read(schoolDataProvider.notifier)
+                                  .recordCheckIn(
+                                    selectedStudentId,
+                                    checkedIn: _checkedIn,
+                                  );
+                              _showMessage(context, 'Check-in record added.');
+                            },
+                      icon: const Icon(Icons.qr_code_scanner),
+                      label: const Text('Record scan'),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
-      ),
-    ],
-  );
+      ],
+    );
+  }
 }
 
 void _showMessage(BuildContext context, String message) => ScaffoldMessenger.of(

@@ -1,33 +1,5 @@
-import '../../students/domain/student.dart';
 import '../domain/school_record.dart';
 import '../domain/school_repository.dart';
-
-final demoStudents = <Student>[
-  const Student(
-    id: 's-101',
-    name: 'Mimi Bekele',
-    grade: 'Grade 8',
-    section: 'A',
-  ),
-  const Student(
-    id: 's-102',
-    name: 'Hana Tesfaye',
-    grade: 'Grade 8',
-    section: 'A',
-  ),
-  const Student(
-    id: 's-103',
-    name: 'Liya Abebe',
-    grade: 'Grade 8',
-    section: 'B',
-  ),
-  const Student(
-    id: 's-104',
-    name: 'Rahel Alemu',
-    grade: 'Grade 7',
-    section: 'A',
-  ),
-];
 
 class InMemorySchoolRepository implements SchoolRepository {
   @override
