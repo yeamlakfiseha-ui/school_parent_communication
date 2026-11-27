@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../features/auth/domain/user.dart';
 import '../../features/auth/presentation/auth_controller.dart';
 import '../../features/auth/presentation/login_screen.dart';
+import '../../features/messaging/presentation/chat_screen.dart';
+import '../../features/messaging/presentation/messages_screen.dart';
 import 'routes.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -48,8 +50,21 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           _Page(AppRoutes.termSummary, 'Term summary',
               destination: '/parent/child/demo-student/summary'),
           _Page(AppRoutes.announcements, 'Announcements and schedule'),
-          _Page(AppRoutes.parentMessages, 'Messages'),
+          _Page(
+            AppRoutes.parentMessages,
+            'Messages',
+            builder: (context, state) => MessagesScreen(
+              onConversationTap: (conversation) =>
+                  context.push(AppRoutes.parentChatFor(conversation.id)),
+            ),
+          ),
         ],
+      ),
+      GoRoute(
+        path: AppRoutes.parentChat,
+        builder: (context, state) => ChatScreen(
+          conversationId: state.pathParameters['conversationId'] ?? '',
+        ),
       ),
       _roleShell(
         title: 'Teacher',
@@ -57,8 +72,21 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           _Page(AppRoutes.teacherHome, 'Teacher home'),
           _Page(AppRoutes.qrScanner, 'QR scanner'),
           _Page(AppRoutes.reportEntry, 'Add grade / behavior report'),
-          _Page(AppRoutes.teacherMessages, 'Messages'),
+          _Page(
+            AppRoutes.teacherMessages,
+            'Messages',
+            builder: (context, state) => MessagesScreen(
+              onConversationTap: (conversation) =>
+                  context.push(AppRoutes.teacherChatFor(conversation.id)),
+            ),
+          ),
         ],
+      ),
+      GoRoute(
+        path: AppRoutes.teacherChat,
+        builder: (context, state) => ChatScreen(
+          conversationId: state.pathParameters['conversationId'] ?? '',
+        ),
       ),
       _roleShell(
         title: 'School leader',
@@ -94,20 +122,23 @@ ShellRoute _roleShell({required String title, required List<_Page> pages}) =>
         for (final page in pages)
           GoRoute(
             path: page.path,
-            builder: (context, state) => _FeaturePage(
-              title: page.title,
-              studentId: state.pathParameters['studentId'],
-            ),
+            builder: (context, state) =>
+                page.builder?.call(context, state) ??
+                _FeaturePage(
+                  title: page.title,
+                  studentId: state.pathParameters['studentId'],
+                ),
           ),
       ],
     );
 
 class _Page {
-  const _Page(this.path, this.title, {this.destination});
+  const _Page(this.path, this.title, {this.destination, this.builder});
 
   final String path;
   final String title;
   final String? destination;
+  final GoRouterWidgetBuilder? builder;
 
   String get destinationPath => destination ?? path;
 }
