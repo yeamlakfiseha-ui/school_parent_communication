@@ -3,13 +3,17 @@ import 'conversation.dart';
 
 /// Abstraction for reading and updating local messaging threads.
 abstract interface class MessagingRepository {
-  List<Conversation> getConversations();
+  List<Conversation> getConversationsForUser(String userId);
 
   ChatMessage sendMessage({
     required String conversationId,
     required String senderId,
-    required String text,
+    required String receiverId,
+    required String content,
   });
 
-  void markAsRead(String conversationId);
+  void markAsRead({
+    required String conversationId,
+    required String readerId,
+  });
 }

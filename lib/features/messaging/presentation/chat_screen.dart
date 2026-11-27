@@ -64,7 +64,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   void _handleSend() {
     final sent = ref.read(messagingControllerProvider.notifier).sendMessage(
           conversationId: widget.conversationId,
-          text: _messageController.text,
+          content: _messageController.text,
         );
 
     if (!sent) {
@@ -87,6 +87,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final conversation = ref.watch(
       conversationByIdProvider(widget.conversationId),
     );
+    final currentUserId = ref.watch(currentMessagingUserIdProvider);
 
     if (conversation == null) {
       return Scaffold(
@@ -108,17 +109,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final counterpart = conversation.counterpartFor(currentUserId);
 
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 0,
         title: Row(
           children: [
-            ContactAvatar(user: conversation.contact, radius: 18),
+            ContactAvatar(user: counterpart, radius: 18),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                conversation.contact.name,
+                counterpart.name,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -127,7 +129,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ),
       body: Column(
         children: [
-          if (conversation.contextLabel != null)
+          if (conversation.studentName != null)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -138,7 +140,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 ),
               ),
               child: Text(
-                conversation.contextLabel!,
+                'About: ${conversation.studentName!}',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: colorScheme.onSurfaceVariant,
                 ),
@@ -151,7 +153,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 child: conversation.messages.isEmpty
                     ? Center(
                         child: Text(
-                          'Start the conversation with ${conversation.contact.name}.',
+                          'Start the conversation with ${counterpart.name}.',
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: colorScheme.onSurfaceVariant,
                           ),
@@ -166,8 +168,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         itemCount: conversation.messages.length,
                         itemBuilder: (context, index) {
                           final message = conversation.messages[index];
-                          final isSent =
-                              message.senderId != conversation.contact.id;
+                          final isSent = message.senderId == currentUserId;
                           return _MessageBubble(
                             message: message,
                             isSent: isSent,
@@ -210,6 +211,9 @@ class _MessageBubble extends StatelessWidget {
         : colorScheme.surfaceContainerHighest;
     final textColor =
         isSent ? colorScheme.onPrimaryContainer : colorScheme.onSurface;
+    final timestampText = formatMessageTime(message.createdAt);
+    final statusLabel = message.isRead ? 'Read' : 'Sent';
+    final metaText = isSent ? '$timestampText  $statusLabel' : timestampText;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -236,7 +240,7 @@ class _MessageBubble extends StatelessWidget {
                   ),
                 ),
                 child: Text(
-                  message.text,
+                  message.content,
                   style: theme.textTheme.bodyMedium?.copyWith(color: textColor),
                 ),
               ),
@@ -244,7 +248,7 @@ class _MessageBubble extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
                 child: Text(
-                  formatMessageTime(message.sentAt),
+                  metaText,
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                   ),

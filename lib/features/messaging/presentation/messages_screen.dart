@@ -19,6 +19,7 @@ class MessagesScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final conversations = ref.watch(messagingControllerProvider);
+    final currentUserId = ref.watch(currentMessagingUserIdProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -37,6 +38,7 @@ class MessagesScreen extends ConsumerWidget {
                     final conversation = conversations[index];
                     return _ConversationTile(
                       conversation: conversation,
+                      currentUserId: currentUserId,
                       onTap: () => _openConversation(context, ref, conversation),
                     );
                   },
@@ -67,21 +69,25 @@ class MessagesScreen extends ConsumerWidget {
 class _ConversationTile extends StatelessWidget {
   const _ConversationTile({
     required this.conversation,
+    required this.currentUserId,
     required this.onTap,
   });
 
   final Conversation conversation;
+  final String currentUserId;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final isUnread = conversation.hasUnread;
+    final counterpart = conversation.counterpartFor(currentUserId);
+    final unreadCount = conversation.unreadCountFor(currentUserId);
+    final isUnread = unreadCount > 0;
     final lastMessage = conversation.lastMessage;
-    final previewText = lastMessage?.text ?? 'No messages yet';
+    final previewText = lastMessage?.content ?? 'No messages yet';
     final timestampText = lastMessage != null
-        ? formatMessageTime(lastMessage.sentAt)
+        ? formatMessageTime(lastMessage.createdAt)
         : '';
 
     return Material(
@@ -94,7 +100,7 @@ class _ConversationTile extends StatelessWidget {
         leading: Stack(
           clipBehavior: Clip.none,
           children: [
-            ContactAvatar(user: conversation.contact, radius: 24),
+            ContactAvatar(user: counterpart, radius: 24),
             if (isUnread)
               Positioned(
                 right: -2,
@@ -118,7 +124,7 @@ class _ConversationTile extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                conversation.contact.name,
+                counterpart.name,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.titleMedium?.copyWith(
@@ -167,7 +173,7 @@ class _ConversationTile extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    '${conversation.unreadCount}',
+                    '$unreadCount',
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: colorScheme.onPrimary,
                       fontWeight: FontWeight.w700,

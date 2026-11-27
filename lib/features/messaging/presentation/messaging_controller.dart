@@ -5,8 +5,15 @@ import '../data/in_memory_messaging_repository.dart';
 import '../domain/conversation.dart';
 import '../domain/messaging_repository.dart';
 
+const defaultMessagingUserId = 'parent@parentlink.test';
+
 final messagingRepositoryProvider = Provider<MessagingRepository>(
   (ref) => InMemoryMessagingRepository(),
+);
+
+final currentMessagingUserIdProvider = Provider<String>(
+  (ref) => ref.watch(authControllerProvider).asData?.value?.id ??
+      defaultMessagingUserId,
 );
 
 final messagingControllerProvider =
@@ -26,31 +33,51 @@ final conversationByIdProvider = Provider.family<Conversation?, String>(
 
 class MessagingController extends Notifier<List<Conversation>> {
   @override
-  List<Conversation> build() =>
-      ref.watch(messagingRepositoryProvider).getConversations();
+  List<Conversation> build() {
+    final userId = ref.watch(currentMessagingUserIdProvider);
+    return ref.watch(messagingRepositoryProvider).getConversationsForUser(userId);
+  }
 
   bool sendMessage({
     required String conversationId,
-    required String text,
+    required String content,
   }) {
-    final trimmed = text.trim();
+    final trimmed = content.trim();
     if (trimmed.isEmpty) return false;
 
-    final senderId =
-        ref.read(authControllerProvider).asData?.value?.id ?? 'current-user';
+    final senderId = ref.read(currentMessagingUserIdProvider);
+    final conversation = state.cast<Conversation?>().firstWhere(
+          (c) => c?.id == conversationId,
+          orElse: () => null,
+        );
+    if (conversation == null) return false;
+
+    final receiverId = senderId == conversation.teacherId
+        ? conversation.parentId
+        : conversation.teacherId;
+
     final repository = ref.read(messagingRepositoryProvider);
     repository.sendMessage(
       conversationId: conversationId,
       senderId: senderId,
-      text: trimmed,
+      receiverId: receiverId,
+      content: trimmed,
     );
-    state = List<Conversation>.unmodifiable(repository.getConversations());
+    state = List<Conversation>.unmodifiable(
+      repository.getConversationsForUser(senderId),
+    );
     return true;
   }
 
   void markAsRead(String conversationId) {
+    final readerId = ref.read(currentMessagingUserIdProvider);
     final repository = ref.read(messagingRepositoryProvider);
-    repository.markAsRead(conversationId);
-    state = List<Conversation>.unmodifiable(repository.getConversations());
+    repository.markAsRead(
+      conversationId: conversationId,
+      readerId: readerId,
+    );
+    state = List<Conversation>.unmodifiable(
+      repository.getConversationsForUser(readerId),
+    );
   }
 }
